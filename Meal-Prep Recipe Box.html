@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meal-Prep Recipe Box</title>
+<style>
+  :root{
+    --bg:#f7fafc; --card-bg:#ffffff; --border:#2d3748; --border-lt:#e2e8f0;
+    --text:#1a1a1a; --muted:#4a5568; --label:#718096; --accent:#2b6cb0;
+    --meta-bg:#f7fafc; --meta-border:#edf2f7; --notes-bg:#ebf8ff; --notes-border:#3182ce; --notes-text:#2c5282; --notes-strong:#2a4365;
+    --tab-bg:#edf2f7; --tab-active:#2b6cb0; --tab-text:#2d3748;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12161c; --card-bg:#1a2028; --border:#4a5568; --border-lt:#2d3748;
+      --text:#e8eaed; --muted:#a0aec0; --label:#a0aec0; --accent:#63b3ed;
+      --meta-bg:#212833; --meta-border:#2d3748; --notes-bg:#1c2a38; --notes-border:#63b3ed; --notes-text:#cbd8e6; --notes-strong:#e8eaed;
+      --tab-bg:#212833; --tab-active:#2b6cb0; --tab-text:#e8eaed;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12161c; --card-bg:#1a2028; --border:#4a5568; --border-lt:#2d3748;
+    --text:#e8eaed; --muted:#a0aec0; --label:#a0aec0; --accent:#63b3ed;
+    --meta-bg:#212833; --meta-border:#2d3748; --notes-bg:#1c2a38; --notes-border:#63b3ed; --notes-text:#cbd8e6; --notes-strong:#e8eaed;
+    --tab-bg:#212833; --tab-active:#2b6cb0; --tab-text:#e8eaed;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--text); margin:0;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+    font-size:11pt; line-height:1.4;
+  }
+  header{
+    padding:20px 16px 8px; text-align:center; padding-top:calc(20px + env(safe-area-inset-top,0px));
+  }
+  header h1{margin:0 0 4px; font-size:20pt; color:var(--text);}
+  header p{margin:0; color:var(--muted); font-size:10pt;}
+  nav{
+    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+    padding:12px; max-width:900px; margin:0 auto;
+  }
+  nav button{
+    background:var(--tab-bg); color:var(--tab-text); border:1px solid var(--border-lt);
+    border-radius:20px; padding:8px 14px; font-size:9.5pt; font-weight:600; cursor:pointer;
+  }
+  nav button.active{background:var(--tab-active); color:#fff; border-color:var(--tab-active);}
+  main{max-width:900px; margin:0 auto; padding:8px 16px 32px; overflow-x:auto;}
+  .recipe{display:none;}
+  .recipe.active{display:block;}
+  .card{border:2px solid var(--border); border-radius:8px; padding:24px; background:var(--card-bg); margin:0 auto;}
+  .rheader{border-bottom:2px solid var(--border-lt); padding-bottom:12px; margin-bottom:16px;}
+  .title{font-size:18pt; font-weight:700; margin:0 0 4px; color:var(--text);}
+  .subtitle{font-size:10.5pt; color:var(--muted); margin:0; font-style:italic;}
+  .meta-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    background:var(--meta-bg); border:1px solid var(--meta-border); border-radius:6px;
+    padding:10px 12px; margin:16px 0; text-align:center;
+  }
+  .meta-item .label{font-size:7.5pt; text-transform:uppercase; letter-spacing:.5px; color:var(--label); font-weight:600; margin-bottom:2px;}
+  .meta-item .val{font-size:10.5pt; font-weight:700; color:var(--text);}
+  .columns{display:grid; grid-template-columns:1fr; gap:16px;}
+  @media(min-width:640px){.columns{grid-template-columns:44% 53%; gap:3%;}}
+  h2{font-size:11.5pt; text-transform:uppercase; letter-spacing:.5px; color:var(--accent); border-bottom:1px solid var(--border-lt); padding-bottom:4px; margin:0 0 10px;}
+  .group-title{font-size:9.5pt; font-weight:700; color:var(--text); margin:8px 0 4px; text-decoration:underline;}
+  ul{margin:0 0 12px; padding-left:18px;} li{margin-bottom:5px; font-size:9.5pt;}
+  ol{margin:0; padding-left:18px;} ol li{margin-bottom:8px; font-size:9.5pt;} ol li strong{color:var(--text);}
+  .notes{margin-top:14px; padding:10px 12px; background:var(--notes-bg); border-left:4px solid var(--notes-border); border-radius:4px; font-size:9pt; color:var(--notes-text);}
+  .notes strong{color:var(--notes-strong);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🥗 Meal-Prep Recipe Box</h1>
+  <p>5 chilled batch-prep lunches &bull; Type 3 resistant starch &bull; nut-free</p>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+
+<script>
+const recipes = [
+{
+  id:"marsala", name:"Chicken Marsala Pasta",
+  title:"Chilled Chicken Marsala & Herb Pasta Salad",
+  subtitle:"Cold Batch-Prep &bull; Type 3 Resistant Starch &bull; Savory Umami &bull; Nut-Free",
+  meta:[["Servings","4 Lunches"],["Calories / Svg","~420 kcal"],["Protein / Svg","38 g"],["Net Carbs / Svg","34 g (6g fiber)"]],
+  ingredients:[
+    ["The Base & Lean Protein",["<strong>8 oz dry</strong> high-protein pasta (penne, rotini, or farfalle), cooked <em>al dente</em> &amp; <em>chilled overnight</em>","<strong>1 lb</strong> boneless, skinless chicken breast, grilled or pan-seared &amp; diced"]],
+    ["Sautéed Savory Mushrooms & Greens",["<strong>10–12 oz</strong> cremini / baby bella mushrooms, sliced","<strong>1/3 cup</strong> shallots or red onion, finely minced","<strong>2 cups</strong> fresh baby spinach or arugula, roughly chopped","<strong>1/4 cup</strong> fresh Italian flat-leaf parsley, finely chopped","<em>Optional:</em> <strong>2 tbsp</strong> grated Pecorino Romano or Parmesan"]],
+    ["Marsala Pan Emulsion",["<strong>1/3 cup</strong> dry Marsala wine (cooked down)","<strong>1/4 cup</strong> low-sodium chicken bone broth","<strong>3 tbsp</strong> extra virgin olive oil","<strong>1 tbsp</strong> fresh lemon juice","<strong>1 tsp</strong> Dijon mustard","<strong>2 cloves</strong> garlic, grated fine","<strong>1/2 tsp</strong> dried thyme, sea salt &amp; black pepper"]]
+  ],
+  steps:[
+    "<strong>The Resistant Starch Step:</strong> Boil pasta until strictly <em>al dente</em>. Drain, rinse with cold water, spread across a baking sheet to release steam, and refrigerate overnight (8&ndash;12 hrs) to form retrograded Type 3 starch.",
+    "<strong>Sauté Mushrooms & Shallots:</strong> Heat 1 tbsp olive oil in a skillet over medium-high. Add sliced mushrooms and shallots; cook undisturbed for 4&ndash;5 min until deeply browned. Add grated garlic and thyme for 60 seconds.",
+    "<strong>Deglaze the Marsala Pan:</strong> Pour dry Marsala wine and bone broth into the hot skillet. Simmer vigorously for 3&ndash;4 minutes until reduced by half, burning off the harsh alcohol. Remove from heat and stir in Dijon, lemon juice, remaining olive oil, salt, and pepper. Let cool completely.",
+    "<strong>Combine & Coat:</strong> In a large bowl, toss the chilled pasta, diced cooked chicken, cooled mushroom mixture with pan juices, chopped spinach, and fresh parsley. Fold until evenly coated.",
+    "<strong>Pack 4 Containers:</strong> Divide evenly across 4 airtight containers. Seal and refrigerate for up to 4 days."
+  ],
+  notes:"Enjoy chilled straight from the fridge to protect the resistant starch. Reducing the Marsala wine concentrates the deep savory sweetness while simmering off the alcohol."
+},
+{
+  id:"whitebean", name:"White Bean & Sausage",
+  title:"Tuscan White Bean, Sausage & Spinach Pasta Salad",
+  subtitle:"Chilled Batch-Prep &bull; Type 3 Resistant Starch &bull; High Protein &bull; Nut-Free",
+  meta:[["Servings","4 Lunches"],["Calories / Svg","~440 kcal"],["Protein / Svg","36 g"],["Net Carbs / Svg","36 g (8g fiber)"]],
+  ingredients:[
+    ["The Base & Protein",["<strong>8 oz dry</strong> high-protein or short pasta (orzo, ditalini, or stars), cooked <em>al dente</em> &amp; <em>chilled overnight</em>","<strong>12–16 oz</strong> sweet Italian chicken or turkey sausage (casings removed)","<strong>1 can (15 oz)</strong> cannellini (white) beans, rinsed, drained &amp; dried"]],
+    ["Greens & Mediterranean Toss-Ins",["<strong>5 cups</strong> fresh baby spinach, roughly chopped","<strong>1 medium</strong> English cucumber, diced (skin on)","<strong>1/4 cup</strong> sun-dried tomatoes (oil-packed, drained &amp; chopped)","<strong>2 tbsp</strong> pitted Kalamata olives, sliced","<em>Optional:</em> <strong>1 cup</strong> canned quartered artichoke hearts, drained"]],
+    ["Herb Vinaigrette",["<strong>2 tbsp</strong> extra virgin olive oil","<strong>2 tbsp</strong> red wine vinegar or white balsamic vinegar","<strong>1/2 tsp</strong> dried oregano &amp; <strong>1/2 tsp</strong> dried basil","<strong>1/4 tsp</strong> garlic powder","<strong>Pinch</strong> sea salt &amp; cracked black pepper"]]
+  ],
+  steps:[
+    "<strong>The Resistant Starch Step:</strong> Boil pasta until strictly <em>al dente</em>. Drain (use a fine-mesh sieve if using small stars), rinse under cold water, spread thinly to release steam, and refrigerate overnight (8&ndash;12 hrs) to form retrograded Type 3 starch.",
+    "<strong>Brown the Sausage:</strong> In a skillet over medium heat, cook sausage meat, breaking it into small bite-sized crumbles with a wooden spoon until browned and fully cooked through (~8&ndash;10 min). Transfer to a paper-towel-lined plate to drain and cool completely.",
+    "<strong>Whisk Vinaigrette:</strong> In a small bowl or measuring cup, whisk together the extra virgin olive oil, vinegar, oregano, basil, garlic powder, salt, and black pepper.",
+    "<strong>Combine Everything:</strong> In a large mixing bowl, toss the chilled pasta, cooled sausage crumbles, dry cannellini beans, chopped fresh spinach, cucumber, sun-dried tomatoes, and olives. Pour the vinaigrette over top and toss until coated.",
+    "<strong>Pack 4 Containers:</strong> Divide the salad evenly across 4 airtight meal containers. Seal and refrigerate for up to 4 days."
+  ],
+  notes:"Eat cold straight from the fridge to keep the resistant starch intact and prevent digestive strain. The chopped fresh baby spinach will lightly tenderize in the dressing over days without becoming waterlogged."
+},
+{
+  id:"orzoshrimp", name:"Lemon-Herb Orzo & Shrimp",
+  title:"Lemon-Herb Orzo & Salad Shrimp Bowl",
+  subtitle:"Chilled Batch-Prep &bull; Type 3 Resistant Starch &bull; Lean Protein &bull; Nut-Free",
+  meta:[["Servings","4 Lunches"],["Calories / Svg","~415 kcal"],["Protein / Svg","36 g"],["Net Carbs / Svg","38 g (6g fiber)"]],
+  ingredients:[
+    ["The Base & Protein",["<strong>8 oz dry</strong> orzo pasta, cooked <em>al dente</em> &amp; <em>chilled overnight</em>","<strong>1 lb</strong> wild salad shrimp (cooked &amp; peeled), thawed and pressed bone-dry"]],
+    ["Vegetables & Fresh Herbs",["<strong>1.5 cups</strong> English cucumber, diced (skin on)","<strong>1 can (14 oz)</strong> quartered artichoke hearts in water, drained, rinsed &amp; chopped","<strong>1/4 cup</strong> red onion or shallot, finely minced","<strong>1/3 cup</strong> fresh dill &amp; flat-leaf parsley, finely chopped","<em>Optional:</em> <strong>1/2 cup</strong> crumbled Greek feta or diced red bell pepper"]],
+    ["Lemon-Herb Emulsion",["<strong>3 tbsp</strong> extra virgin olive oil","<strong>Juice of 1.5</strong> fresh lemons (~3 tbsp)","<strong>1 clove</strong> garlic, grated or minced fine","<strong>1/4 tsp</strong> sea salt &amp; freshly cracked black pepper"]]
+  ],
+  steps:[
+    "<strong>The Resistant Starch Step:</strong> Cook 8 oz orzo in boiling salted water until strictly <em>al dente</em>. Drain, rinse quickly under cold water to stop cooking, spread across a tray to steam off, and refrigerate overnight (8&ndash;12 hrs) to form retrograded Type 3 starch.",
+    "<strong>Dry the Shrimp & Artichokes:</strong> Thoroughly pat thawed salad shrimp dry with clean paper towels. Press excess water from the rinsed artichoke hearts and chop into bite-sized pieces.",
+    "<strong>Whisk the Dressing:</strong> In a small bowl or measuring cup, whisk the extra virgin olive oil, fresh lemon juice, grated garlic, salt, and pepper until emulsified.",
+    "<strong>Toss & Coat:</strong> In a large mixing bowl, combine chilled orzo, dry salad shrimp, cucumber, artichoke hearts, minced shallot/onion, fresh dill, and parsley. Pour over the lemon dressing and fold until evenly coated.",
+    "<strong>Pack 4 Containers:</strong> Divide the mixture evenly across 4 airtight glass meal containers. Seal and refrigerate for up to 4 days."
+  ],
+  notes:"Enjoy chilled directly from the fridge to preserve the retrograded resistant starch structure. If raw onion is harsh for reflux, soak the minced shallot/onion in cold water for 10 minutes (or swap for scallion green tops) before tossing."
+},
+{
+  id:"greek", name:"Greek Chickpea & Shrimp",
+  title:"Greek Chickpea, Ditalini & Shrimp Salad",
+  subtitle:"Chilled Batch-Prep &bull; Type 3 Resistant Starch &bull; Low Acid &bull; Nut-Free",
+  meta:[["Servings","4 Lunches"],["Calories / Svg","~430 kcal"],["Protein / Svg","38 g"],["Net Carbs / Svg","39 g (8g fiber)"]],
+  ingredients:[
+    ["The Base & Protein",["<strong>6 oz dry</strong> Ditalini pasta, cooked <em>al dente</em> &amp; <em>chilled overnight</em>","<strong>1 lb</strong> Wild salad shrimp (cooked/peeled), thawed and pressed bone-dry","<strong>1 can (15 oz)</strong> chickpeas, rinsed, drained, and dried"]],
+    ["Fresh Crunch & Mediterranean Savory",["<strong>1.5 cups</strong> English cucumber, diced (peel on)","<strong>1 cup</strong> cherry tomatoes, halved","<strong>1/2 cup</strong> fresh flat-leaf Italian parsley, finely chopped","<strong>1/2 cup (2–3 oz)</strong> genuine Greek feta (sheep/goat milk), crumbled","<strong>1/3 cup</strong> pitted Kalamata olives, halved"]],
+    ["Vinaigrette Emulsion",["<strong>2.5 tbsp</strong> extra virgin olive oil","<strong>2 tbsp</strong> red wine vinegar","<strong>1/2 tsp</strong> dried Greek oregano","<strong>1 clove</strong> garlic, grated fine (or 1/4 tsp garlic powder)","<strong>Pinch</strong> black pepper"]]
+  ],
+  steps:[
+    "<strong>The Resistant Starch Step:</strong> Boil 6 oz ditalini in salted water until strictly <em>al dente</em>. Drain, rinse with cold water, spread on a tray to steam off, then refrigerate overnight (8–12 hrs) to form retrograded Type 3 starch.",
+    "<strong>Dry the Shrimp & Chickpeas:</strong> Thoroughly pat thawed shrimp and rinsed chickpeas completely dry with paper towels. Removing excess moisture keeps the dressing clingy and prevents sogginess.",
+    "<strong>Whisk Vinaigrette:</strong> In a measuring cup, whisk extra virgin olive oil, red wine vinegar, dried oregano, grated garlic, and black pepper until emulsified.",
+    "<strong>Combine & Coat:</strong> In a large mixing bowl, toss the chilled ditalini, chickpeas, dried shrimp, cucumber, halved cherry tomatoes, chopped parsley, Kalamata olives, and crumbled feta. Pour over the vinaigrette and toss gently to coat.",
+    "<strong>Pack 4 Containers:</strong> Divide the mixture evenly across 4 airtight meal-prep containers. Seal and refrigerate for up to 4 days."
+  ],
+  notes:"Eat cold straight from the fridge to keep the resistant starch intact. Diced English cucumber eliminates stringiness, while flat-leaf parsley stays crisp in the dressing for days without getting soggy."
+},
+{
+  id:"tuna", name:"Tuna Slaw & Rice",
+  title:"Mild California Roll Tuna Slaw & Rice Bowl",
+  subtitle:"Chilled Batch-Prep &bull; High Resistant Starch &bull; Reflux-Conscious &bull; Nut-Free",
+  meta:[["Servings","4 Lunches"],["Calories / Svg","~410 kcal"],["Protein / Svg","38 g"],["Net Carbs / Svg","33 g (6g fiber)"]],
+  ingredients:[
+    ["The Base & Crunch",["<strong>2 cups</strong> cooked brown rice, <em>chilled overnight</em> (yields 1/2 cup per bowl)","<strong>4 cans (5 oz each)</strong> tuna in water, pressed very dry","<strong>4 cups</strong> bagged cole slaw mix (shredded cabbage & carrots)","<strong>1 medium</strong> English cucumber, diced (skin on)","<strong>3 stalks</strong> scallions, <em>green tops only</em>, sliced"]],
+    ["Pantry Creamy Umami Dressing",["<strong>3 tbsp</strong> light mayonnaise (or 2% plain Greek yogurt)","<strong>2 tbsp</strong> low-sodium soy sauce","<strong>1 tbsp</strong> rice vinegar (or mild white wine vinegar)","<strong>1.5 tsp</strong> extra virgin olive oil (or 1 tsp creamy peanut butter)","<strong>1/2 tsp</strong> sweet paprika","<strong>1/4 tsp</strong> garlic powder"]],
+    ["Finishing Garnish",["<strong>1 tbsp</strong> toasted sesame seeds","<strong>2 snack sheets</strong> roasted nori (seaweed), crumbled right before serving"]]
+  ],
+  steps:[
+    "<strong>The Resistant Starch Step:</strong> Cook brown rice ahead. Spread thinly on a plate to cool, then store airtight in the refrigerator for at least 8&ndash;12 hours to lock in Type 3 retrograded resistant starch.",
+    "<strong>Dry the Tuna:</strong> Drain all 4 cans into a fine-mesh strainer. Press firmly with a fork or clean paper towels to squeeze out excess liquid. Flake into a mixing bowl.",
+    "<strong>Emulsify the Dressing:</strong> In a small bowl, whisk together the light mayo, soy sauce, vinegar, olive oil (or peanut butter), paprika, and garlic powder until smooth and creamy.",
+    "<strong>Dress the Tuna:</strong> Pour the dressing over the dried flaked tuna. Fold thoroughly until evenly coated.",
+    "<strong>Assemble 4 Containers:</strong> In each container, add <strong>1/2 cup chilled rice</strong>, <strong>1 cup cole slaw mix</strong>, and <strong>1/4 cup diced cucumber</strong>. Divide dressed tuna evenly across all four. Top with sliced scallion greens and sesame seeds."
+  ],
+  notes:"Keep nori seaweed packets dry in your pantry; crumble them over the bowl immediately before eating so they stay crispy. Use only scallion green tops to protect against acid reflux. Store sealed up to 4 days in the fridge."
+}
+];
+
+const nav = document.getElementById('nav');
+const main = document.getElementById('main');
+
+recipes.forEach((r,i)=>{
+  const btn = document.createElement('button');
+  btn.textContent = r.name;
+  btn.onclick = () => show(r.id);
+  btn.dataset.id = r.id;
+  nav.appendChild(btn);
+
+  const sec = document.createElement('div');
+  sec.className = 'recipe';
+  sec.id = r.id;
+  sec.innerHTML = `
+    <div class="card">
+      <div class="rheader">
+        <div class="title">${r.title}</div>
+        <div class="subtitle">${r.subtitle}</div>
+      </div>
+      <div class="meta-grid">
+        ${r.meta.map(m=>`<div class="meta-item"><div class="label">${m[0]}</div><div class="val">${m[1]}</div></div>`).join('')}
+      </div>
+      <div class="columns">
+        <div class="col">
+          <h2>Ingredients</h2>
+          ${r.ingredients.map(g=>`<div class="group-title">${g[0]}</div><ul>${g[1].map(li=>`<li>${li}</li>`).join('')}</ul>`).join('')}
+        </div>
+        <div class="col">
+          <h2>Preparation Steps</h2>
+          <ol>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+          <div class="notes"><strong>Batch-Prep Notes:</strong> ${r.notes}</div>
+        </div>
+      </div>
+    </div>`;
+  main.appendChild(sec);
+});
+
+function show(id){
+  document.querySelectorAll('.recipe').forEach(el=>el.classList.toggle('active', el.id===id));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.id===id));
+  try{ localStorage.setItem('lastRecipe', id); }catch(e){}
+}
+let start = recipes[0].id;
+try{ const saved = localStorage.getItem('lastRecipe'); if(saved && recipes.some(r=>r.id===saved)) start = saved; }catch(e){}
+show(start);
+</script>
+</body>
+</html>
